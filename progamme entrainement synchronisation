@@ -1,0 +1,158 @@
+#define BROCHE_ECHO1 7 // Broche Echo du HC-SR04 sur D7 //
+#define BROCHE_TRIGGER1 8 // Broche Trigger du HC-SR04 sur D8 //
+#define BROCHE_ECHO2 9 // Broche Echo du HC-SR04 sur D7 //
+#define BROCHE_TRIGGER2 10 // Broche Trigger du HC-SR04 sur D8 //
+
+#define FACILE 15
+#define MOYEN 10
+#define DIFFICILE 5
+
+#define ALLER 0
+#define RETOUR 1
+
+// Definition des variables //
+
+int MesureMaxi = 500; // Distance maxi a mesurer //
+int MesureMini = 0.1; // Distance mini a mesurer //
+long Duree1;
+long Duree2;
+long Distance1;
+long Distance2;
+int difficulte = MOYEN;
+int sens = ALLER;
+
+void setup() {
+
+  pinMode(BROCHE_TRIGGER1, OUTPUT); // Broche Trigger en sortie //
+  pinMode(BROCHE_ECHO1, INPUT); // Broche Echo en entree //
+  pinMode(BROCHE_TRIGGER2, OUTPUT); // Broche Trigger en sortie //
+  pinMode(BROCHE_ECHO2, INPUT); // Broche Echo en entree //
+  pinMode(11, OUTPUT);  // Définition des broches d'entrée des 2 LED
+  pinMode(12, OUTPUT);
+  Serial.begin (115200);
+}
+
+void loop() {
+
+  // Debut de la mesure avec un signal de 10 µS applique sur TRIG //
+  digitalWrite(BROCHE_TRIGGER1, LOW); // On efface l'etat logique de TRIG //
+  delayMicroseconds(2);
+  digitalWrite(BROCHE_TRIGGER1, HIGH); // On met la broche TRIG a "1" pendant 10µS //
+  delayMicroseconds(10);
+  digitalWrite(BROCHE_TRIGGER1, LOW); // On remet la broche TRIG a "0" //
+
+  Duree1 = pulseIn(BROCHE_ECHO1, HIGH);
+
+  digitalWrite(BROCHE_TRIGGER2, LOW); // On efface l'etat logique de TRIG //
+  delayMicroseconds(2);
+  digitalWrite(BROCHE_TRIGGER2, HIGH); // On met la broche TRIG a "1" pendant 10µS //
+  delayMicroseconds(10);
+  digitalWrite(BROCHE_TRIGGER2, LOW); // On remet la broche TRIG a "0" //
+
+  // On mesure combien de temps le niveau logique haut est actif sur ECHO //
+  Duree2 = pulseIn(BROCHE_ECHO2, HIGH);
+
+  // Calcul de la distance grace au temps mesure et Durée totale (aller-retour ultrasons) * La vitesse du son (0.034 cm/µs)) / 2 (Aller-retour des ultrasons) //
+  Distance1 = Duree1 * 0.034 / 2;
+  Distance2 = Duree2 * 0.034 / 2;
+
+  // Verification si valeur mesuree dans la plage //
+  if (Distance1 >= MesureMaxi || Distance1 <= MesureMini) {
+
+    // Si la distance est hors plage, on affiche un message d'erreur //
+    Serial.println("Distance de mesure en dehors de la plage ( Distance <1 cm ou >5 m)");
+  }
+
+  else {
+
+    // Affichage dans le moniteur serie de la distance mesuree en cm//
+    //    Serial.print("Distance1 = ");
+    //    Serial.print(Distance1);
+    //    Serial.print("    Distance2 = ");
+    //    Serial.print(Distance2);
+
+    if (sens == ALLER) {
+      if (Distance1 > 10) {
+        Serial.print("Aller: ");
+        Serial.print(Distance1 - Distance2);
+        
+        // Condition d'alumage des LED //
+        if (Distance2 > Distance1 + difficulte) {
+          digitalWrite(12, LOW); digitalWrite(11, HIGH);
+          Serial.println("    Trop lent");
+        }
+        if (Distance2 < Distance1 - difficulte) {
+          digitalWrite(12, HIGH); digitalWrite(11, HIGH);
+          Serial.println("    Trop rapide");
+        }
+        if ((Distance2 >= Distance1 - difficulte) and (Distance2 <= Distance1 + difficulte)) {
+          digitalWrite(12, HIGH); digitalWrite(11, LOW);
+          Serial.println("    Bien");
+        }
+        delay(10);
+      }
+      if (Distance1 <= 10) {
+        Serial.print("Aller: ");
+        Serial.print(Distance1 - Distance2);
+        
+        // Condition d'alumage des LED //
+        if (Distance2 > Distance1 + difficulte) {
+          digitalWrite(12, LOW); digitalWrite(11, HIGH);
+          Serial.println("    Trop lent");
+        }
+        if (Distance2 < Distance1 - difficulte) {
+          digitalWrite(12, HIGH); digitalWrite(11, HIGH);
+          Serial.println("    Trop rapide");
+        }
+        if ((Distance2 >= Distance1 - difficulte) and (Distance2 <= Distance1 + difficulte)) {
+          digitalWrite(12, HIGH); digitalWrite(11, LOW);
+          Serial.println("    Bien");
+        }
+        delay(10);
+        sens = RETOUR;
+      }
+    }
+
+    if (sens == RETOUR) {
+      if (Distance1 < 40) {
+        Serial.print("Retour: ");
+        Serial.print(Distance1 - Distance2);
+        
+        // Condition d'alumage des LED //
+        if (Distance2 > abs(Distance1 + difficulte)) {
+          digitalWrite(12, HIGH); digitalWrite(11, HIGH);
+          Serial.println("    Trop rapide");
+        }
+        if (Distance2 < abs(Distance1 - difficulte)) {
+          digitalWrite(12, LOW); digitalWrite(11, HIGH);
+          Serial.println("    Trop lent");
+        }
+        if ((Distance2 >= Distance1 - difficulte) and (Distance2 <= Distance1 + difficulte)) {
+          digitalWrite(12, HIGH); digitalWrite(11, LOW);
+          Serial.println("    Bien");
+        }
+        delay(10);
+      }
+      if (Distance1 >= 40) {
+        Serial.print("Retour: ");
+        Serial.print(Distance1 - Distance2);
+        
+        // Condition d'alumage des LED //
+        if (Distance2 > abs(Distance1 + difficulte)) {
+          digitalWrite(12, HIGH); digitalWrite(11, HIGH);
+          Serial.println("    Trop rapide");
+        }
+        if (Distance2 < abs(Distance1 - difficulte)) {
+          digitalWrite(12, LOW); digitalWrite(11, HIGH);
+          Serial.println("    Trop lent");
+        }
+        if ((Distance2 >= Distance1 - difficulte) and (Distance2 <= Distance1 + difficulte)) {
+          digitalWrite(12, HIGH); digitalWrite(11, LOW);
+          Serial.println("    Bien");
+        }
+        delay(10);
+        sens = ALLER;
+      }
+    }
+  }
+}
