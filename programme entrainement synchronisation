@@ -1,0 +1,106 @@
+#define BROCHE_ECHO 9 // Broche Echo du HC-SR04 sur D7 //
+#define BROCHE_TRIGGER 10 // Broche Trigger du HC-SR04 sur D8 //
+
+#define ALLER 0
+#define RETOUR 1
+
+#define FACILE 15
+#define MOYEN 50
+#define DIFFICILE 5
+
+// Definition des variables avec 10 < distance < 30 //
+
+long Duree;
+long Distance;
+unsigned long temps; // temps en ms //
+int start = 0;
+
+int sens = ALLER;
+int difficulte = MOYEN;
+long periode_objectif = 4000;
+
+long pourcentage_aller = 50;
+long pourcentage_retour = 100 - pourcentage_aller;
+
+
+long temps_retour = periode_objectif * pourcentage_retour * 0.01;
+long temps_aller = periode_objectif * pourcentage_aller * 0.01;
+
+void setup() {
+  pinMode(BROCHE_TRIGGER, OUTPUT); // Broche Trigger en sortie //
+  pinMode(BROCHE_ECHO, INPUT); // Broche Echo en entree //
+  pinMode(11, OUTPUT);  // Définition des broches d'entrée des 2 LED
+  pinMode(12, OUTPUT);
+  Serial.begin (115200);
+}
+
+void loop() {
+
+  // Debut de la mesure avec un signal de 10 µS applique sur TRIG //
+  digitalWrite(BROCHE_TRIGGER, LOW); // On efface l'etat logique de TRIG //
+  delayMicroseconds(2);
+  digitalWrite(BROCHE_TRIGGER, HIGH); // On met la broche TRIG a "1" pendant 2µS //
+  delayMicroseconds(10);
+  digitalWrite(BROCHE_TRIGGER, LOW); // On remet la broche TRIG a "0" //
+
+  // On mesure combien de temps le niveau logique haut est actif sur ECHO //
+  Duree = pulseIn(BROCHE_ECHO, HIGH);
+
+  // Calcul de la distance grace au temps mesure //
+  Distance = Duree * 0.034 / 2; // Durée totale (aller-retour ultrasons) * La vitesse du son (0.034 cm/µs)) / 2 (Aller-retour des ultrasons) //
+
+  if (Distance >= 500 || Distance <= 0.1) {
+    //    Serial.println("Distance ( Distance <1 cm ou >5 m)");
+  }
+
+  else {
+    //    Serial.println(Distance);
+    delay(10);
+    // Condition de lancement du chrono //
+    if (Distance > 30) {
+      if (sens == RETOUR)
+      {
+        temps = millis() - start;
+        Serial.print("Retour:");
+        Serial.print(temps);
+        if (temps > temps_retour * (1 + difficulte * 0.01)) {
+          digitalWrite(12, LOW); digitalWrite(11, HIGH);
+          Serial.println(" Trop lent");
+        }
+        if (temps < temps_retour * (1 - difficulte * 0.01)) {
+          digitalWrite(12, HIGH); digitalWrite(11, HIGH);
+          Serial.println(" Trop rapide");
+        }
+        if ((temps >= temps_retour * (1 - difficulte * 0.01)) and (temps <= temps_retour * (1 + difficulte * 0.01))) {
+          digitalWrite(12, HIGH); digitalWrite(11, LOW);
+          Serial.println(" Bien");
+        }
+        start = millis();
+        sens = ALLER;
+      }
+
+    }
+    // Condition de fin du chrono //
+    if (Distance < 10) {
+      if (sens == ALLER) {
+        temps = millis() - start;
+        Serial.print("Aller:");
+        Serial.print(temps);
+        if (temps > temps_aller * (1 + difficulte * 0.01)) {
+          digitalWrite(12, LOW); digitalWrite(11, HIGH);
+          Serial.println(" Trop lent");
+        }
+        if (temps < temps_aller * (1 - difficulte * 0.01)) {
+          digitalWrite(12, HIGH); digitalWrite(11, HIGH);
+          Serial.println(" Trop rapide");
+        }
+        if ((temps >= temps_aller * (1 - difficulte * 0.01)) and (temps <= temps_aller * (1 + difficulte * 0.01))) {
+          digitalWrite(12, HIGH); digitalWrite(11, LOW);
+          Serial.println(" Bien");
+        }
+        start = millis();
+        sens = RETOUR;
+      }
+    }
+  }
+}
